@@ -1,0 +1,1046 @@
+<!doctype html>
+<html lang="bg"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#1b1d21"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Учи Лесно"><link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" href="icon-192.png"><link rel="manifest" href="manifest.webmanifest"><style>html,body{margin:0}[hidden]{display:none!important}img{max-width:100%}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+<title>Учи Лесно</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Unbounded:wght@500;600&display=swap">
+<style>
+  /* Layout: една центрирана колона, карта с въпроса, четири отговора, стрелка долу вдясно */
+  :root {
+    --bg: #1b1d21;
+    --surface: #24272d;
+    --surface-2: #2d3138;
+    --line: #3a3f48;
+    --fg: #e8eaee;
+    --muted: #9097a3;
+    --blue: #2f55b0;
+    --blue-deep: #1d3670;
+    --blue-soft: #8fb0ff;
+    --ok: #4cc38a;
+    --bad: #ef6a6a;
+    --font-display: "Unbounded", "Manrope", system-ui, sans-serif;
+    --font-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; background: var(--bg); }
+  button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+  .opt, .tab, .btn, .next { min-height: 44px; }
+  html, body { min-height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.5;
+    padding-block: 28px 40px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .wrap { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+  .top { display: flex; flex-direction: column; gap: 10px; }
+  .meta { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .brand { font-family: var(--font-display); font-weight: 500; font-size: 13px; letter-spacing: 0.04em; color: var(--blue-soft); }
+  .count { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .bar { height: 6px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; width: 0; background: var(--blue); border-radius: 99px; transition: width .35s ease; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 24px 20px;
+    display: flex; flex-direction: column; gap: 22px;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(18px, 4.6vw, 24px);
+    line-height: 1.35;
+    margin: 0;
+    text-wrap: balance;
+    overflow-wrap: anywhere;
+  }
+  .opts { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; }
+  .opt {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 34px 1fr 28px;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+    background: var(--surface-2);
+    color: var(--fg);
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color .15s, background .15s, transform .15s;
+  }
+  .opt:hover:not(:disabled) { border-color: var(--blue); background: #2a3040; }
+  .opt:focus-visible, .next:focus-visible, .restart:focus-visible { outline: 2px solid var(--blue-soft); outline-offset: 3px; }
+  .opt:disabled { cursor: default; }
+  .letter {
+    width: 34px; height: 34px; border-radius: 8px;
+    display: grid; place-items: center;
+    background: var(--blue-deep); color: var(--blue-soft);
+    font-family: var(--font-display); font-size: 13px; font-weight: 500;
+  }
+  .txt { min-width: 0; overflow-wrap: anywhere; }
+  .mark { width: 26px; height: 26px; display: grid; place-items: center; opacity: 0; transform: scale(.6); transition: opacity .2s, transform .2s; }
+  .mark svg { width: 100%; height: 100%; }
+
+  .opt.correct { border-color: var(--ok); background: rgba(76,195,138,.12); }
+  .opt.correct .letter { background: var(--ok); color: #0f2a1d; }
+  .opt.correct .mark { opacity: 1; transform: scale(1); color: var(--ok); }
+  .opt.wrong { border-color: var(--bad); background: rgba(239,106,106,.12); }
+  .opt.wrong .letter { background: var(--bad); color: #3a1010; }
+  .opt.wrong .mark { opacity: 1; transform: scale(1); color: var(--bad); }
+  .opt.dim { opacity: .55; }
+
+  .foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 52px; }
+  .note { font-size: 14px; color: var(--muted); }
+  .note.ok { color: var(--ok); }
+  .note.bad { color: var(--bad); }
+  .next {
+    margin-left: auto;
+    width: 52px; height: 52px; border-radius: 50%;
+    border: none; background: var(--blue); color: #fff;
+    display: grid; place-items: center; cursor: pointer;
+    transition: transform .15s, background .15s, opacity .2s;
+  }
+  .next:hover { background: #3a64cc; transform: translateX(2px); }
+  .next[hidden] { display: none !important; }
+  .next svg { width: 24px; height: 24px; }
+
+  .result { align-items: center; text-align: center; gap: 14px; padding-block: 36px; }
+  .score { font-family: var(--font-display); font-size: clamp(40px, 14vw, 64px); font-weight: 600; color: var(--blue-soft); font-variant-numeric: tabular-nums; line-height: 1; }
+  .restart {
+    margin-top: 6px; background: var(--blue); color: #fff; border: none; border-radius: 10px;
+    padding: 12px 22px; font: inherit; font-weight: 600; cursor: pointer;
+  }
+  .restart:hover { background: #3a64cc; }
+  .tag { font-size: 12px; color: var(--muted); text-align: center; }
+
+  .tabs { display: flex; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 4px; }
+  .tab {
+    flex: 1; min-width: 0; border: none; background: transparent; color: var(--muted);
+    font: inherit; font-weight: 600; font-size: 13px; padding: 10px 2px; border-radius: 9px; cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .tab:hover { color: var(--fg); }
+  .tab[aria-selected="true"] { background: var(--blue); color: #fff; }
+  .tab:focus-visible { outline: 2px solid var(--blue-soft); outline-offset: 2px; }
+
+  .add { gap: 16px; }
+  .add h2 { font-family: var(--font-display); font-weight: 500; font-size: 17px; margin: 0; }
+  .help { font-size: 14px; color: var(--muted); margin: 0; }
+  .sample {
+    margin: 0; padding: 12px 14px; background: var(--bg); border: 1px dashed var(--line); border-radius: 10px;
+    font-size: 13px; line-height: 1.55; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere;
+  }
+  textarea {
+    width: 100%; min-height: 200px; resize: vertical; background: var(--bg); color: var(--fg);
+    border: 1.5px solid var(--line); border-radius: 10px; padding: 12px 14px; font: inherit; font-size: 16px; line-height: 1.5;
+  }
+  textarea:focus-visible { outline: 2px solid var(--blue-soft); outline-offset: 2px; border-color: var(--blue); }
+  .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .btn {
+    background: var(--blue); color: #fff; border: none; border-radius: 10px; padding: 11px 20px;
+    font: inherit; font-weight: 600; cursor: pointer; transition: background .15s, opacity .15s;
+  }
+  .btn:hover:not(:disabled) { background: #3a64cc; }
+  .btn:disabled { opacity: .4; cursor: default; }
+  .btn:focus-visible { outline: 2px solid var(--blue-soft); outline-offset: 3px; }
+  .status { font-size: 13px; color: var(--muted); }
+  .status.ok { color: var(--ok); }
+  .status.bad { color: var(--bad); }
+
+  .plist { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .pitem {
+    display: grid; grid-template-columns: 38px 1fr auto; gap: 10px; align-items: start;
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px;
+  }
+  .pnum { font-family: var(--font-display); font-size: 13px; color: var(--blue-soft); padding-top: 2px; font-variant-numeric: tabular-nums; }
+  .pbody { min-width: 0; font-size: 14px; overflow-wrap: anywhere; }
+  .pa { color: var(--ok); margin-top: 2px; font-size: 13px; }
+  .pa::before { content: "✓ "; }
+  .pwarn .pa { color: var(--bad); }
+  .pwarn .pa::before { content: "! "; }
+  .del {
+    background: transparent; border: 1px solid var(--line); color: var(--muted); border-radius: 8px;
+    font: inherit; font-size: 12px; padding: 4px 9px; cursor: pointer; white-space: nowrap;
+  }
+  .del:hover { color: var(--fg); border-color: var(--muted); }
+  .del.armed { color: var(--bad); border-color: var(--bad); }
+  .del:focus-visible { outline: 2px solid var(--blue-soft); outline-offset: 2px; }
+  .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .tile { background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .tile b { display: block; font-family: var(--font-display); font-weight: 500; font-size: 26px; color: var(--blue-soft); font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .tile span { font-size: 12px; color: var(--muted); }
+  .hrow { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+  .hrow .d { color: var(--muted); font-size: 13px; }
+  .hrow .p { font-variant-numeric: tabular-nums; text-align: right; }
+  .hbar { grid-column: 1 / -1; height: 5px; border-radius: 99px; background: var(--bg); overflow: hidden; }
+  .hbar i { display: block; height: 100%; background: var(--blue); border-radius: 99px; }
+  .hbar i.good { background: var(--ok); }
+  .sub { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 4px 0 0; }
+
+  .inp { flex: 1; min-width: 0; min-height: 44px; background: var(--bg); color: var(--fg); border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 14px; font: inherit; font-size: 16px; }
+  .inp:focus-visible { outline: 2px solid var(--blue-soft); outline-offset: 2px; border-color: var(--blue); }
+  .chip { background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 99px; padding: 4px 12px; min-height: 32px !important; font: inherit; font-size: 13px; cursor: pointer; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip:focus-visible { outline: 2px solid var(--blue-soft); outline-offset: 2px; }
+  .brand { font-size: 17px; max-width: 50%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pitem.act { border-color: var(--blue); }
+  .pitem .row { gap: 6px; flex-wrap: nowrap; }
+  .pitem .help { font-size: 13px; }
+
+  #addedList .row { flex-direction: column; align-items: stretch; }
+  .pitem .qq { font-weight: 500; }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style></head><body>
+
+<div class="wrap">
+  <div class="top">
+    <div class="meta">
+      <span class="brand" id="brand">Учи Лесно</span>
+      <span class="count" id="count"></span><button type="button" class="chip" id="whoBtn"></button>
+    </div>
+    <div class="bar" role="progressbar" aria-label="Напредък"><i id="fill"></i></div>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button type="button" class="tab" id="tabQuiz" role="tab" aria-selected="true">Тест</button>
+    <button type="button" class="tab" id="tabSubj" role="tab" aria-selected="false">Предмети</button>
+    <button type="button" class="tab" id="tabAdd" role="tab" aria-selected="false">Добави</button>
+    <button type="button" class="tab" id="tabStats" role="tab" aria-selected="false">Резултати</button>
+  </div>
+
+  <main class="card" id="card"></main>
+
+  <section class="card add" id="statsView" hidden>
+    <h2 id="statsTitle">Резултати</h2>
+    <div class="tiles" id="tiles"></div>
+    <p class="sub" id="histTitle">Последни опити</p>
+    <ul class="plist" id="history"></ul>
+    <p class="help" id="statsEmpty" hidden>Още няма завършени опити. Мини теста до края и резултатът ще се запише тук.</p>
+    <div class="row">
+      <button type="button" class="del" id="clearStats">Изчисти резултатите</button>
+      <span class="status" id="statsSave" aria-live="polite"></span>
+    </div>
+  </section>
+
+  <section class="card add" id="subjView" hidden>
+    <h2>Предмети</h2>
+    <p class="help">Всеки предмет е отделен тест със свои въпроси и резултати.</p>
+    <ul class="plist" id="subjList"></ul>
+    <div class="row"><button type="button" class="del" id="seedBtn" hidden>Върни „Патрология“</button></div>
+    <p class="sub">Нов предмет</p>
+    <div class="row"><input class="inp" id="subjName" placeholder="Име, напр. История" maxlength="60"><button type="button" class="btn" id="subjAdd">Създай</button></div>
+    <p class="sub">Инсталиране</p>
+    <p class="help" id="instHelp"></p>
+    <div class="row"><button type="button" class="btn" id="instBtn" hidden>Инсталирай</button></div>
+    <p class="sub">Резервно копие</p>
+    <p class="help">Свали профила като файл и го върни на друго устройство.</p>
+    <div class="row"><button type="button" class="btn" id="bkOut">Свали копие</button><button type="button" class="btn" id="bkIn">Върни от файл</button><input type="file" id="bkFile" accept=".json,application/json" hidden></div>
+    <span class="status" id="subjStatus" aria-live="polite"></span>
+  </section>
+
+  <section class="card add" id="profView" hidden>
+    <h2>Профил</h2>
+    <p class="help">Данните се пазят на това устройство и работят без интернет.</p>
+    <ul class="plist" id="profList"></ul>
+    <div class="row" id="pinBox" hidden><input class="inp" id="pinIn" type="password" inputmode="numeric" placeholder="ПИН" maxlength="8" autocomplete="off"><button type="button" class="btn" id="pinOk">Влез</button></div>
+    <p class="sub">Нов профил</p>
+    <div class="row"><input class="inp" id="newName" placeholder="Име" maxlength="30"><input class="inp" id="newPin" type="password" inputmode="numeric" placeholder="ПИН, по желание" maxlength="8" autocomplete="off"></div>
+    <div class="row"><button type="button" class="btn" id="newBtn">Създай профил</button><span class="status" id="profStatus" aria-live="polite"></span></div>
+  </section>
+
+  <section class="card add" id="addView" hidden>
+    <h2 id="addTitle">Добави въпроси</h2>
+    <p class="help" id="pickHelp"></p><ul class="plist" id="pickList"></ul>
+    <div id="addManage" hidden><div class="row"><button type="button" class="del" id="changeSubj">Смени предмет</button><button type="button" class="del" id="genAll">Допълни грешни отговори навсякъде</button></div>
+    <p class="help">Постави въпросите така, както ги пишеш: номер, въпрос, а отговорът на нов ред след тире. Номерата не са задължителни, страницата сама ги подрежда и номерира. Грешните отговори се избират от отговорите на другите въпроси. Въпроси „Вярно/Невярно“ се познават по отговора.</p>
+    <div class="sample">1. Кой превежда Вулгата?
+- Йероним
+
+2. Вярно ли е, че докетизмът твърди, че тялото на Христос е илюзия?
+- Вярно</div>
+    <textarea id="paste" placeholder="Постави въпросите тук" spellcheck="false"></textarea>
+    <div class="row">
+      <label class="help" style="flex-basis:100%"><input type="checkbox" id="genChk" checked> Допълвай грешни отговори за въпросите само с един отговор</label><button type="button" class="btn" id="addBtn" disabled>Добави</button>
+      <span class="status" id="parseStatus" aria-live="polite"></span>
+    </div>
+    <ul class="plist" id="preview"></ul>
+    <p class="sub" id="addedTitle" hidden>Въпроси в предмета</p>
+    <ul class="plist" id="addedList"></ul>
+    <span class="status" id="saveStatus" aria-live="polite"></span></div>
+  </section>
+</div>
+
+<script>
+  /* ДОБАВЯНЕ НА ВЪПРОСИ
+     Въпрос с избор:  { q: "текст", a: "верният отговор", w: ["грешен 1", "грешен 2", "грешен 3"] }  (отговорите се разбъркват при всяко показване)
+     Вярно/Невярно:   tf("текст", true)  или  tf("текст", false) */
+  const tf = (q, v) => ({ q, options: ["Вярно", "Невярно"], answer: v ? 0 : 1 });
+
+  const QUESTIONS = [
+    { q: "През кой период и кого са наричали „Бащи“?",
+      a: "Епископите през монархичния период през II век",
+      w: ["Апостолите през I век", "Дяконите през III век", "Презвитерите през IV век"] },
+    { q: "Каква характеристика се изисква, за да бъде някой доктор (учител) на Църквата?",
+      a: "Изключителна ученост",
+      w: ["Мъченическа смърт", "Епископски сан", "Дарът на чудотворство"] },
+    { q: "На какъв език се говори през I до началото на II век?",
+      a: "Койне",
+      w: ["Латински", "Арамейски", "Класически атически гръцки"] },
+    { q: "Кои са критериите за църковен Отец?",
+      a: "Морален живот, ортодоксално учение, признаване от Църквата и принадлежност към нея до край",
+      w: ["Мъченическа смърт, чудотворство, епископски сан и владеене на гръцки",
+          "Царско благоволение, ученост, дълголетие и авторство на съчинения",
+          "Висок сан, богатство, авторство на съчинения и свободно владеене на латински"] },
+    { q: "Текстус Рецептус: „Вярвам в Бога Отца Вседържителя, Творец на небето и земята… Който слязъл в ада и в третия ден възкръснал от мъртвите…“ Кой символ на вярата е това?",
+      a: "Апостолският символ",
+      w: ["Никейският символ", "Атанасиевият символ", "Халкидонският символ"] },
+    { q: "Кой въвежда патрологията като дисциплина?",
+      a: "Адолф Харнак",
+      w: ["Йоханес Квастен", "Филип Шаф", "Мартин Лутер"] },
+    { q: "Къде се използва Апостолският символ?",
+      a: "На Запад",
+      w: ["На Изток", "Само в Африка", "Само в Азия"] },
+    { q: "Къде се използва Никейският символ?",
+      a: "На Изток",
+      w: ["На Запад", "Само в Рим", "Само в Африка"] },
+    { q: "Епископите от коя част от служенията са?",
+      a: "Не от харизматичните",
+      w: ["От харизматичните", "И от двете", "Нито от едните"] },
+    { q: "Дяконите от коя част от служенията са?",
+      a: "Не от харизматичните",
+      w: ["От харизматичните", "И от двете", "Нито от едните"] },
+    { q: "Какво е отношението на Посланието на Варнава към Стария Завет?",
+      a: "Подходът е алегоричен, а евреите са го приели буквално",
+      w: ["Подходът е буквален и евреите правилно са го разбрали",
+          "Отхвърля изцяло Стария Завет като чужд на християнството",
+          "Приема го само като исторически източник без духовен смисъл"] },
+    { q: "Кой пръв въвежда термина „католическа“ (съборна, вселенска) за Църквата?",
+      a: "Игнатий Богоносец",
+      w: ["Поликарп Смирненски", "Климент Римски", "Юстин"] },
+    tf("Вярно ли е, че в учението на Ерм (книгата) някои откриват значението „повече дела, отколкото са необходими“?", true),
+    { q: "Кой пише съчинение, според което Марк и Матей са писали по едно от евангелията?",
+      a: "Папий",
+      w: ["Ириней", "Евсевий", "Юстин"] },
+    { q: "Кои използват философията в съчиненията си?",
+      a: "Апологетите",
+      w: ["Апостолските мъже", "Монасите пустинници", "Хронистите"] },
+    { q: "Кой казва, че елинистичните философи могат да се наричат християни?",
+      a: "Юстин",
+      w: ["Тертулиан", "Ириней", "Климент Римски"] },
+    { q: "Защо апологетите използват философията в съчиненията си?",
+      a: "Защото аудиторията им е от по-висшата част на обществото",
+      w: ["Защото философията е част от Свещеното Писание",
+          "Защото императорите са им заповядали",
+          "Защото аудиторията им е само от неграмотни селяни"] },
+    { q: "Кой се опитва да покаже, че християнската вяра не е просто философска школа, а че Логосът, когото философите търсят, се е въплатил в Исус Христос?",
+      a: "Юстин",
+      w: ["Ириней", "Ориген", "Тертулиан"] },
+    { q: "Кой говори за рекапитулацията и за какво?",
+      a: "Ириней, за същността на изкупителното дело Христово",
+      w: ["Тертулиан, за единството на Църквата",
+          "Ориген, за вечното раждане на Сина",
+          "Атанасий, за единосъщието на Сина"] },
+    tf("Вярно ли е, че Ириней използва термина „рекапитулация“ за същността на изкупителното дело на Христос?", true),
+    tf("Вярно ли е, че юдеите евионити отричат троичността, божествеността на Исус Христос и Неговото свръхестествено раждане, но виждат в Него велик пророк, подобен на Мойсей?", true),
+    tf("Вярно ли е, че юдеите евионити отричат догмата за изкуплението?", true),
+    tf("Вярно ли е, че юдеите гностици не вярват в достоверността на Стария Завет?", true),
+    tf("Вярно ли е, че докетизмът е свързан с твърдението, че тялото на Исус Христос е илюзия?", true),
+    { q: "Кой казва за Светата Троица, че различието не е в субстанцията?",
+      a: "Тертулиан",
+      w: ["Ириней", "Ориген", "Арий"] },
+    { q: "Кой казва: „Както законът е възпитател на евреите, така философията е дял, за да доведе езичниците до Христос“?",
+      a: "Климент Александрийски",
+      w: ["Юстин", "Ориген", "Тертулиан"] },
+    { q: "Кой написва съчинение срещу ересите?",
+      a: "Ириней",
+      w: ["Климент Александрийски", "Атанасий", "Василий Велики"] },
+    { q: "Срещу кого пише Ириней за въплъщението?",
+      a: "Евионитите",
+      w: ["Арианите", "Монтанистите", "Манихеите"] },
+    { q: "Кой казва: „Различието не е различна субстанция, а различие на Лицата в тази субстанция“?",
+      a: "Тертулиан",
+      w: ["Ириней", "Ориген", "Киприан"] },
+    { q: "Кой пише съчинение за единството на Католическата църква?",
+      a: "Киприан",
+      w: ["Ориген", "Атанасий", "Йероним"] },
+    { q: "Кой въвежда термина „вечно раждане“?",
+      a: "Ориген",
+      w: ["Арий", "Тертулиан", "Августин"] },
+    { q: "Кой пише: „Словото Божие се е въплатило, за да се обожим ние“ (сотириология)?",
+      a: "Атанасий",
+      w: ["Василий Велики", "Григорий Нисийски", "Киприан"] },
+    tf("Вярно ли е, че според Григорий Нисийски образът и подобието се придобиват чрез нравствено усъвършенстване?", false),
+    { q: "Кой въвежда шестте колони на Стария Завет (Хексапла)?",
+      a: "Ориген",
+      w: ["Йероним", "Евсевий", "Августин"] },
+    { q: "Какво твърди Ориген за значението на изкупителното дело?",
+      a: "Че има универсално значение, за всички",
+      w: ["Че е само за избраните", "Че е само за кръстените евреи", "Че е само за мъчениците"] },
+    { q: "Какво значи „хомоусиос“?",
+      a: "Единосъщен (единно същен)",
+      w: ["Подобосъщен", "Иносъщен", "Тричленен"] },
+    { q: "Кой учи, че природата е обща, а ипостасите са частни?",
+      a: "Василий Велики",
+      w: ["Климент Александрийски", "Киприан", "Папий"] },
+    { q: "Кой учи, че най-съвършеното богопознание е чрез екстаз?",
+      a: "Григорий Нисийски (философът)",
+      w: ["Василий Велики", "Йоан Златоуст", "Августин"] },
+    { q: "Срещу чие учение пише Кирил Александрийски?",
+      a: "Несторий",
+      w: ["Арий", "Пелагий", "Македоний"] },
+    { q: "Как нарича Кирил Александрийски общението между двете природи?",
+      a: "Communicatio idiomatum",
+      w: ["Теозис", "Кенозис", "Рекапитулация"] },
+    { q: "Какво означава „масабнамата“: „Ние сме напълно покварени, ако няма благодат“? Чие е учението?",
+      a: "Жан Калвин",
+      w: ["Пелагий", "Атанасий", "Йоан Златоуст"] },
+    { q: "Според Йоан Златоуст на кого е платен откупът?",
+      a: "На Бога",
+      w: ["На сатаната", "На смъртта", "На ада"] },
+    { q: "Какво казва Йоан Златоуст за подобието на човека?",
+      a: "Човекът е създаден по Божи образ със свобода и разум, а към Божието подобие израства чрез любов, добродетел и съработничество с Божията благодат, без грехът да унищожава божествения му образ",
+      w: ["Човекът е създаден по Божи образ само по тяло, а подобието получава чрез кръщението, без нужда от свобода и разум",
+          "Образът и подобието са едно и също и напълно се губят при грехопадението, затова човекът не може да се върне към Бога",
+          "Подобието е дадено на човека при сътворението и не зависи от неговата воля, добродетел или благодат"] },
+    { q: "Кой превежда Вулгата?",
+      a: "Йероним",
+      w: ["Августин", "Амвросий", "Ориген"] },
+    { q: "Кой говори за три точки за равнина?",
+      a: "Августин",
+      w: ["Тертулиан", "Киприан", "Йероним"] },
+    { q: "В какви три състояния се намира човекът според св. Августин (създаден, след грехопадението, спасен)?",
+      a: "Създаден със свобода да не греши, след грехопадението подвластен на греха, чрез благодатта получава възможност да не греши, а във вечността вече не може да греши",
+      w: ["Създаден подвластен на греха, чрез кръщението загубва свободата си, а във вечността продължава да се бори с греха",
+          "Създаден неспособен да греши, след грехопадението запазва пълна свобода да избира доброто, а чрез благодатта става безгрешен още в този живот",
+          "Създаден със склонност към греха, чрез закона се освобождава от него, а във вечността запазва възможност да греши"] }
+  ];
+
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let n = a.length - 1; n > 0; n--) {
+      const r = Math.floor(Math.random() * (n + 1));
+      [a[n], a[r]] = [a[r], a[n]];
+    }
+    return a;
+  }
+
+  /* Банката: вградените въпроси плюс добавените от теб */
+  let BASE = QUESTIONS, BANK = QUESTIONS.slice();
+  let ADDED = [];   /* { q, a } за избор или { q, t: true|false } за Вярно/Невярно */
+
+  function toQuestion(x) {
+    return typeof x.t === "boolean" ? tf(x.q, x.t) : (x.w && x.w.length ? { q: x.q, a: x.a, w: x.w } : { q: x.q, a: x.a });
+  }
+  function rebuildBank() {
+    BANK = BASE.concat(ADDED.map(toQuestion));
+  }
+
+  /* Три грешни отговора от другите въпроси, с подобна дължина */
+  function allPool() {
+    const out = [];
+    (typeof DATA !== "undefined" ? DATA.subjects : []).forEach(x => {
+      const own = !!SUBJ && x.id === SUBJ.id;
+      (own ? ADDED : x.added).forEach(y => {
+        if (typeof y.a === "string") out.push({ t: y.a, own });
+        (y.w || []).forEach(t => out.push({ t, own }));
+      });
+    });
+    return out;
+  }
+  /* Грешни отговори: числата се променят малко, текстовете се взимат от другите въпроси с подобен вид и дължина */
+  function genWrong(item) {
+    const a = item.a, out = [], na = norm(a);
+    if (/^\d{1,4}$/.test(a)) {
+      const n = +a, ds = n >= 1000 ? [1, 2, 5, 10, 50, 100] : n >= 100 ? [1, 2, 10, 50, 100] : [1, 2, 3, 5, 10], c = [];
+      ds.forEach(d => { c.push(n + d); if (n - d > 0) c.push(n - d); });
+      shuffle(c).forEach(v => { if (out.length < 3 && String(v) !== a) out.push(String(v)); });
+      if (out.length === 3) return out;
+    }
+    const wc = a.split(/\s+/).length, up = /^\p{Lu}/u.test(a), seen = new Set([na]);
+    allPool().filter(p => { const k = norm(p.t); if (!k || seen.has(k) || k.includes(na) || na.includes(k)) return false; seen.add(k); return true; })
+      .map(p => ({ t: p.t, s: Math.abs(p.t.length - a.length) / (a.length + 6) + Math.abs(p.t.split(/\s+/).length - wc) * 0.15 + (/^\p{Lu}/u.test(p.t) === up ? 0 : 0.4) + (p.own ? 0 : 0.25) + Math.random() * 0.5 }))
+      .sort((x, y) => x.s - y.s)
+      .forEach(p => { if (out.length < 3) out.push(p.t); });
+    return out;
+  }
+  function distractors(item) { return genWrong(item); }
+
+  function prepare(item) {
+    if (item.options) return item;
+    let wrong = item.w || distractors(item); const pad = ["Нито един от другите отговори", "Няма такъв отговор"]; while (wrong.length < 2) wrong = wrong.concat(pad.shift());
+    const options = shuffle([item.a].concat(wrong));
+    return { q: item.q, options, answer: options.indexOf(item.a) };
+  }
+
+  /* Четене на въпроси във формата: номер, въпрос, тире с отговор */
+  function boolOf(ans) {
+    const s = ans.toLowerCase().replace(/[.!\s]+$/, "").trim();
+    if (/^(не е вярно|невярно|не е вярна|не)$/.test(s)) return false;
+    if (/^(вярно|вярно е|да)$/.test(s)) return true;
+    return null;
+  }
+
+  function parseText(text) {
+    const blocks = [];
+    let cur = null;
+    const complete = b => b.ans.length > 0 || /\s[-–—]\s+\S/.test(b.q);
+    text.split(/\r?\n/).forEach(raw => {
+      const line = raw.trim();
+      if (!line) return;
+      const dash = line.match(/^[-–—•*]\s*(.*)$/);
+      if (dash) {
+        if (cur && dash[1]) cur.ans.push(dash[1].trim());
+        return;
+      }
+      const num = line.match(/^\d+\s*[.)]\s*(.*)$/);
+      const body = num ? num[1] : line;
+      const n = num ? parseInt(line, 10) : null;
+      const startsNew = !cur || complete(cur) || (n !== null && cur.n !== null && n > cur.n);
+      if (startsNew) {
+        cur = { q: body, ans: [], n };
+        blocks.push(cur);
+      } else {
+        cur.q += " " + line;          /* продължение на въпрос без отговор, напр. текст на символ на вярата */
+      }
+    });
+
+    const items = [], skipped = [];
+    blocks.forEach(b => {
+      let q = b.q.replace(/\s+/g, " ").trim();
+      let a = b.ans.join(", ");
+      if (!a) {
+        const k = q.search(/\s[-–—]\s+(?!.*\s[-–—]\s)/);
+        if (k > 0) { a = q.slice(k).replace(/^\s*[-–—]\s*/, ""); q = q.slice(0, k).trim(); }
+      }
+      a = a.replace(/\s+/g, " ").replace(/[\s.]+$/, "").trim();
+      q = q.replace(/[\s:]+$/, "");
+      if (!q || !a) { skipped.push(q || "(празен въпрос)"); return; }
+      const v = boolOf(a);
+      if (v !== null) {
+        if (!/вярно/i.test(q)) q = "Вярно ли е, че " + q.charAt(0).toLowerCase() + q.slice(1);
+        if (!/[?]$/.test(q)) q = q.replace(/[.]+$/, "") + "?";
+        items.push({ q, t: v });
+      } else {
+        items.push({ q, a: a.charAt(0).toUpperCase() + a.slice(1) });
+      }
+    });
+    return { items, skipped };
+  }
+
+  const LETTERS = ["А", "Б", "В", "Г"];
+  const ICON_OK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" stroke-width="2"/><path d="M7.5 12.5l3 3 6-6.5"/></svg>';
+  const ICON_BAD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" stroke-width="2"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/></svg>';
+  const ICON_NEXT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+
+  const card = document.getElementById("card");
+  const countEl = document.getElementById("count");
+  const fill = document.getElementById("fill");
+
+  let i = 0, score = 0, answered = false, current = null;
+
+  function render() {
+    if (!BANK.length) {
+      answered = false; finished = true; countEl.textContent = ""; fill.style.width = "0%";
+      card.className = "card result";
+      card.innerHTML = '<div class="note">' + (SUBJ ? "В този предмет още няма въпроси." : "Няма предмети.") + '</div><button type="button" class="restart" id="goAdd">' + (SUBJ ? "Добави въпроси" : "Към предметите") + '</button>';
+      document.getElementById("goAdd").addEventListener("click", () => { addOpen = !!SUBJ; showTab(SUBJ ? "add" : "subj"); });
+      return;
+    }
+    const item = current = prepare(BANK[i]);
+    answered = false;
+    finished = false;
+    countEl.textContent = (SUBJ ? SUBJ.name + " · " : "") + "Въпрос " + (i + 1) + " от " + BANK.length;
+    fill.style.width = (i / BANK.length * 100) + "%";
+
+    card.className = "card";
+    card.innerHTML = "";
+
+    const h = document.createElement("h1");
+    h.textContent = item.q;
+    card.appendChild(h);
+
+    const ul = document.createElement("ul");
+    ul.className = "opts";
+    item.options.forEach((text, k) => {
+      const li = document.createElement("li");
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "opt";
+      b.id = "opt-" + k;
+      b.innerHTML = '<span class="letter">' + LETTERS[k] + '</span><span class="txt"></span><span class="mark"></span>';
+      b.querySelector(".txt").textContent = text;
+      b.addEventListener("click", () => choose(k));
+      li.appendChild(b);
+      ul.appendChild(li);
+    });
+    card.appendChild(ul);
+
+    const foot = document.createElement("div");
+    foot.className = "foot";
+    foot.innerHTML = '<span class="note" id="note" aria-live="polite">Избери един отговор</span>' +
+      '<button type="button" class="next" id="next" hidden aria-label="Следващ въпрос">' + ICON_NEXT + '</button>';
+    card.appendChild(foot);
+    document.getElementById("next").addEventListener("click", next);
+  }
+
+  function choose(k) {
+    if (answered) return;
+    answered = true;
+    const item = current;
+    const buttons = card.querySelectorAll(".opt");
+    const note = document.getElementById("note");
+
+    buttons.forEach((b, idx) => {
+      b.disabled = true;
+      const mark = b.querySelector(".mark");
+      if (idx === item.answer) {
+        b.classList.add("correct");
+        mark.innerHTML = ICON_OK;
+      } else if (idx === k) {
+        b.classList.add("wrong");
+        mark.innerHTML = ICON_BAD;
+      } else {
+        b.classList.add("dim");
+      }
+    });
+
+    if (k === item.answer) {
+      score++;
+      note.textContent = "Вярно!";
+      note.className = "note ok";
+    } else {
+      note.textContent = "Грешно. Верният отговор е " + LETTERS[item.answer] + ".";
+      note.className = "note bad";
+    }
+
+    const nextBtn = document.getElementById("next");
+    nextBtn.hidden = false;
+    nextBtn.focus();
+  }
+
+  function next() {
+    i++;
+    if (i < BANK.length) render(); else finish();
+  }
+
+  function finish() {
+    fill.style.width = "100%";
+    finished = true;
+    const attempt = recordAttempt();
+    const bestPct = Math.max.apply(null, STATS.map(pctOf));
+    countEl.textContent = "Готово";
+    card.className = "card result";
+    card.innerHTML = '<div class="note">Твоят резултат</div>' +
+      '<div class="score">' + score + " / " + BANK.length + '</div>' +
+      '<div class="note">' + Math.round(score / BANK.length * 100) + '% · ' + verdict() + '</div>' +
+      '<div class="note">Опит №' + attempt + ' · най-добър резултат ' + bestPct + '%</div>' +
+      '<button type="button" class="restart" id="restart">Започни отначало</button>';
+    document.getElementById("restart").addEventListener("click", () => { i = 0; score = 0; render(); });
+  }
+
+  function verdict() {
+    const r = score / BANK.length;
+    if (r === 1) return "Всички отговори са верни.";
+    if (r >= 0.6) return "Добър резултат.";
+    return "Опитай още веднъж.";
+  }
+
+  /* ---------- Раздел „Добави въпроси“ и запазване ---------- */
+  const $ = id => document.getElementById(id);
+  const tabQuiz = $("tabQuiz"), tabAdd = $("tabAdd"), addView = $("addView");
+  const pasteEl = $("paste"), addBtn = $("addBtn"), parseStatus = $("parseStatus");
+  const previewEl = $("preview"), addedList = $("addedList"), addedTitle = $("addedTitle"), saveStatus = $("saveStatus");
+  const barEl = document.querySelector(".bar");
+  let finished = false, parsed = { items: [], skipped: [] }, dbRef = null;
+  const STORE_KEY = "qa-test-added-v1";
+
+  const tabStats = $("tabStats"), statsView = $("statsView"), tabSubj = $("tabSubj"), subjView = $("subjView"), profView = $("profView");
+  const tabsEl = document.querySelector(".tabs"), topEl = document.querySelector(".top");
+  let addOpen = false, dirty = false;
+  function showTab(which) {
+    const m = { quiz: tabQuiz, subj: tabSubj, add: tabAdd, stats: tabStats };
+    for (const k in m) m[k].setAttribute("aria-selected", String(k === which));
+    card.hidden = which !== "quiz"; subjView.hidden = which !== "subj"; addView.hidden = which !== "add"; statsView.hidden = which !== "stats";
+    profView.hidden = true; tabsEl.hidden = false; topEl.hidden = false;
+    barEl.hidden = countEl.hidden = which !== "quiz";
+    if (which === "quiz" && dirty) { dirty = false; i = 0; score = 0; render(); refreshMeta(); }
+    if (which === "add") renderAddView();
+    if (which === "stats") renderStats();
+    if (which === "subj") renderSubjects();
+  }
+  tabQuiz.addEventListener("click", () => showTab("quiz"));
+  tabSubj.addEventListener("click", () => showTab("subj"));
+  tabAdd.addEventListener("click", () => { addOpen = false; showTab("add"); });
+  tabStats.addEventListener("click", () => showTab("stats"));
+
+  /* ---------- Резултати: колко пъти е минат тестът и с какъв успех ---------- */
+  const STATS_KEY = "qa-test-stats-v1";
+  const PASS = 60;                       /* праг за успешно минат тест, в проценти */
+  let STATS = [];                        /* { t: време, s: верни, n: общо } */
+  const pctOf = a => Math.round(a.s / a.n * 100);
+
+  function recordAttempt() {
+    STATS.push({ t: Date.now(), s: score, n: BANK.length });
+    if (STATS.length > 500) STATS = STATS.slice(-500);
+    saveBoth("stats", STATS_KEY, STATS);
+    return STATS.length;
+  }
+
+  function renderStats() {
+    const n = STATS.length;
+    const pcts = STATS.map(pctOf);
+    const avg = n ? Math.round(pcts.reduce((a, b) => a + b, 0) / n) : 0;
+    const best = n ? Math.max.apply(null, pcts) : 0;
+    const passed = pcts.filter(p => p >= PASS).length;
+    const tile = (v, l) => '<div class="tile"><b>' + v + '</b><span>' + l + '</span></div>';
+    $("tiles").innerHTML =
+      tile(n, "Направени опита") + tile(n ? avg + "%" : "-", "Среден успех") +
+      tile(n ? best + "%" : "-", "Най-добър резултат") + tile(passed + " от " + n, "Успешни (над " + PASS + "%)");
+    const hist = $("history");
+    hist.innerHTML = "";
+    STATS.slice(-20).reverse().forEach((a, k) => {
+      const p = pctOf(a);
+      const li = document.createElement("li");
+      li.className = "hrow";
+      const when = new Date(a.t).toLocaleString("bg-BG", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+      li.innerHTML = '<span class="d">Опит №' + (n - k) + " · " + esc(when) + '</span><span class="p">' + a.s + " / " + a.n + " · " + p + '%</span>' +
+        '<span class="hbar"><i class="' + (p >= PASS ? "good" : "") + '" style="width:' + p + '%"></i></span>';
+      hist.appendChild(li);
+    });
+    $("histTitle").hidden = n === 0;
+    $("statsEmpty").hidden = n !== 0;
+    $("clearStats").hidden = n === 0;
+  }
+
+  const clearBtn = $("clearStats");
+  clearBtn.addEventListener("click", () => {
+    if (!clearBtn.classList.contains("armed")) {
+      clearBtn.classList.add("armed"); clearBtn.textContent = "Сигурен ли си? Натисни пак";
+      setTimeout(() => { clearBtn.classList.remove("armed"); clearBtn.textContent = "Изчисти резултатите"; }, 3000);
+      return;
+    }
+    clearBtn.classList.remove("armed"); clearBtn.textContent = "Изчисти резултатите";
+    STATS = []; saveBoth("stats", STATS_KEY, STATS); renderStats();
+  });
+
+  function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+  function itemHtml(num, it, extra, warn) {
+    const ans = typeof it.t === "boolean" ? (it.t ? "Вярно" : "Невярно") : it.a;
+    return '<li class="pitem' + (warn ? " pwarn" : "") + '"><span class="pnum">' + num + '</span>' +
+      '<div class="pbody">' + esc(it.q) + '<div class="pa">' + esc(ans) + '</div></div>' + (extra || "") + '</li>';
+  }
+
+  function norm(s) { return s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim(); }
+
+  function renderPreview() {
+    parsed = parseText(pasteEl.value);
+    const known = new Set(BANK.map(x => norm(x.q)));
+    const fresh = [], dup = [];
+    parsed.items.forEach(it => { const k = norm(it.q); if (known.has(k)) dup.push(it); else { known.add(k); fresh.push(it); } });
+    parsed.fresh = fresh;
+
+    let html = "";
+    fresh.forEach((it, n) => { html += itemHtml(BANK.length + n + 1, it); });
+    parsed.skipped.forEach(q => { html += itemHtml("!", { q: q.length > 90 ? q.slice(0, 90) + "…" : q, a: "Няма отговор с тире, въпросът е пропуснат" }, "", true); });
+    previewEl.innerHTML = html;
+
+    const parts = [];
+    if (fresh.length) parts.push("Разпознати: " + fresh.length);
+    if (dup.length) parts.push("Вече ги има: " + dup.length);
+    if (parsed.skipped.length) parts.push("Пропуснати: " + parsed.skipped.length);
+    parseStatus.textContent = pasteEl.value.trim() ? parts.join(" · ") : "";
+    parseStatus.className = "status" + (parsed.skipped.length ? " bad" : "");
+    addBtn.disabled = fresh.length === 0;
+    addBtn.textContent = fresh.length ? "Добави " + fresh.length + (fresh.length === 1 ? " въпрос" : " въпроса") : "Добави";
+  }
+
+  function changed() { dirty = true; rebuildBank(); persist(); renderAdded(); renderPreview(); refreshMeta(); }
+  function renderAddView() {
+    const pick = !addOpen || !SUBJ;
+    $("pickHelp").hidden = !pick; $("pickList").hidden = !pick; $("addManage").hidden = pick;
+    $("addTitle").textContent = pick ? "Добави въпроси" : "Добави въпроси · " + SUBJ.name;
+    if (!pick) { renderAdded(); renderPreview(); return; }
+    $("pickHelp").textContent = DATA.subjects.length ? "Избери предмет, за да добавяш, редактираш или изтриваш въпроси." : "Още няма предмети. Създай първия от раздел „Предмети“.";
+    const ul = $("pickList"); ul.innerHTML = "";
+    DATA.subjects.forEach((x, n) => {
+      const li = document.createElement("li"); li.className = "pitem";
+      li.innerHTML = '<span class="pnum"></span><div class="pbody"><b></b><div class="help"></div></div><div class="row"></div>';
+      li.querySelector(".pnum").textContent = n + 1; li.querySelector("b").textContent = x.name;
+      li.querySelector(".help").textContent = x.added.length + " въпроса";
+      const go = mk("Избери", "del");
+      go.addEventListener("click", () => { addOpen = true; DATA.active = x.id; saveData(); loadSubject(); renderAddView(); });
+      li.lastChild.appendChild(go); ul.appendChild(li);
+    });
+  }
+  $("genAll").addEventListener("click", () => {
+    let c = 0;
+    ADDED.forEach(it => { if (typeof it.a === "string" && !(it.w && it.w.length)) { const w = genWrong(it); if (w.length) { it.w = w; c++; } } });
+    changed(); parseStatus.textContent = c ? "Допълнени грешни отговори: " + c + " въпроса." : "Всички въпроси вече имат грешни отговори."; parseStatus.className = "status ok";
+  });
+  $("changeSubj").addEventListener("click", () => { addOpen = false; renderAddView(); });
+
+  function editQ(li, n) {
+    const it = ADDED[n], isTf = typeof it.t === "boolean";
+    li.innerHTML = '<span class="pnum"></span><div class="pbody edit" style="display:grid;gap:8px"></div>';
+    li.querySelector(".pnum").textContent = n + 1;
+    const box = li.querySelector(".edit");
+    const area = (v, ph) => { const t = document.createElement("textarea"); t.className = "inp"; t.style.minHeight = "80px"; t.value = v; t.placeholder = ph; return t; };
+    const fq = area(it.q, "Въпрос"); box.appendChild(fq);
+    let fa, fw, fs;
+    if (isTf) { fs = document.createElement("select"); fs.className = "inp"; fs.add(new Option("Вярно")); fs.add(new Option("Невярно")); fs.selectedIndex = it.t ? 0 : 1; box.appendChild(fs); }
+    else {
+      fa = document.createElement("input"); fa.className = "inp"; fa.value = it.a; fa.placeholder = "Верен отговор"; box.appendChild(fa);
+      fw = area((it.w || []).join("\n"), "Грешни отговори, по един на ред (до 3). Празно: избират се автоматично."); box.appendChild(fw); const gen = mk("Генерирай грешни отговори", "del"); gen.addEventListener("click", () => { fw.value = genWrong({ a: fa.value.trim() || it.a }).join("\n"); }); box.appendChild(gen);
+    }
+    const row = document.createElement("div"); row.className = "row";
+    const ok = mk("Запази", "btn"), no = mk("Откажи", "del");
+    ok.addEventListener("click", () => {
+      const q = fq.value.replace(/\s+/g, " ").trim();
+      if (isTf) { if (!q) return; ADDED[n] = { q, t: fs.selectedIndex === 0 }; }
+      else {
+        const a = fa.value.trim(); if (!q || !a) { parseStatus.textContent = "Въпросът и верният отговор са задължителни."; parseStatus.className = "status bad"; return; }
+        const w = fw.value.split(/\r?\n/).map(x => x.trim()).filter(x => x && x !== a).slice(0, 3);
+        ADDED[n] = w.length ? { q, a, w } : { q, a };
+      }
+      changed();
+    });
+    no.addEventListener("click", renderAdded);
+    row.append(ok, no); box.appendChild(row); fq.focus();
+  }
+
+  function renderAdded() {
+    addedTitle.hidden = ADDED.length === 0;
+    addedTitle.textContent = "Въпроси в предмета (" + ADDED.length + ")";
+    addedList.innerHTML = "";
+    ADDED.forEach((it, n) => {
+      const li = document.createElement("li"); li.className = "pitem";
+      li.innerHTML = '<span class="pnum"></span><div class="pbody"><div class="qq"></div><div class="pa"></div></div><div class="row"></div>';
+      li.querySelector(".pnum").textContent = n + 1;
+      li.querySelector(".qq").textContent = it.q;
+      li.querySelector(".pa").textContent = typeof it.t === "boolean" ? (it.t ? "Вярно" : "Невярно") : it.a + (it.w && it.w.length ? "" : "  · без грешни отговори");
+      const ed = mk("Редактирай", "del"), rm = mk("Изтрий", "del");
+      ed.addEventListener("click", () => editQ(li, n));
+      arm(rm, "Изтрий", "Сигурен ли си?", () => { ADDED.splice(n, 1); changed(); });
+      li.lastChild.append(ed, rm); addedList.appendChild(li);
+    });
+  }
+
+  function refreshMeta() {
+    if (!finished) countEl.textContent = (SUBJ ? SUBJ.name + " · " : "") + "Въпрос " + (i + 1) + " от " + BANK.length;
+  }
+
+  function setSave(msg, cls) {
+    [saveStatus, $("statsSave")].forEach(el => { el.textContent = msg; el.className = "status " + (cls || ""); });
+  }
+
+  function saveBoth() { saveData(); }
+  function persist() { return saveBoth("added", STORE_KEY, ADDED); }
+
+  addBtn.addEventListener("click", () => {
+    const fresh = parsed.fresh || [];
+    if (!fresh.length) return;
+    ADDED = ADDED.concat(fresh);
+    if ($("genChk").checked) fresh.forEach(it => { if (typeof it.a === "string" && !it.w) { const w = genWrong(it); if (w.length) it.w = w; } });
+    rebuildBank();
+    pasteEl.value = "";
+    renderPreview();
+    renderAdded();
+    refreshMeta();
+    persist();
+    parseStatus.textContent = "Добавени " + fresh.length + ". Общо въпроси: " + BANK.length;
+    parseStatus.className = "status ok";
+  });
+  pasteEl.addEventListener("input", renderPreview);
+
+  function loadLocal() {
+    try { const v = JSON.parse(localStorage.getItem(STORE_KEY) || "[]"); return Array.isArray(v) ? v : []; }
+    catch (e) { return []; }
+  }
+
+  function loadLocalKey(key) {
+    try { const v = JSON.parse(localStorage.getItem(key) || "[]"); return Array.isArray(v) ? v : []; }
+    catch (e) { return []; }
+  }
+
+  /* ---------- Профили, предмети, резервно копие ---------- */
+  const PROF_KEY = "qa-profiles-v2", ACTIVE_KEY = "qa-active-v2", DATA_PREFIX = "qa-data-v2:";
+  let PROFILES = [], PROFILE = null, DATA = { subjects: [], active: null }, SUBJ = null, pendingId = null;
+  const uid = () => Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4);
+  const lget = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } };
+  const lset = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
+  const mk = (t, c) => { const b = document.createElement("button"); b.type = "button"; b.className = c; b.textContent = t; return b; };
+  const validQ = x => x && typeof x.q === "string" && (typeof x.a === "string" || typeof x.t === "boolean");
+  const validS = x => x && typeof x.s === "number" && typeof x.n === "number" && x.n > 0;
+  const newSubj = (name, seed) => ({ id: uid(), name, seed: !!seed, added: [], stats: [] });
+  const seedItems = () => QUESTIONS.map(x => x.options ? { q: x.q, t: x.answer === 0 } : { q: x.q, a: x.a, w: x.w });
+  const seedSubj = () => { const x = newSubj("Патрология", false); x.added = seedItems(); return x; };
+  const cleanSubj = x => ({ id: x.id || uid(), name: String(x.name || "Без име").slice(0, 60), seed: false, added: (x.seed ? seedItems() : []).concat((x.added || []).filter(validQ)), stats: (x.stats || []).filter(validS) });
+  function arm(btn, label, armedLabel, fn) {
+    btn.addEventListener("click", () => {
+      if (!btn.classList.contains("armed")) { btn.classList.add("armed"); btn.textContent = armedLabel; setTimeout(() => { btn.classList.remove("armed"); btn.textContent = label; }, 3000); return; }
+      fn();
+    });
+  }
+  async function hashPin(pin, salt) {
+    try { const h = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(salt + ":" + pin)); return Array.from(new Uint8Array(h)).map(x => x.toString(16).padStart(2, "0")).join(""); }
+    catch (e) { return "p:" + salt + pin; }
+  }
+  function saveData() {
+    if (!PROFILE) return;
+    if (SUBJ) { SUBJ.added = ADDED; SUBJ.stats = STATS; }
+    const ok = lset(DATA_PREFIX + PROFILE.id, DATA);
+    setSave(ok ? "Запазено на това устройство" : "Записът не успя", ok ? "" : "bad");
+  }
+  function loadSubject() {
+    SUBJ = DATA.subjects.find(x => x.id === DATA.active) || DATA.subjects[0] || null;
+    DATA.active = SUBJ ? SUBJ.id : null;
+    BASE = SUBJ && SUBJ.seed ? QUESTIONS : []; ADDED = SUBJ ? SUBJ.added : []; STATS = SUBJ ? SUBJ.stats : [];
+    rebuildBank(); i = 0; score = 0; finished = false;
+    const nm = SUBJ ? SUBJ.name : "няма предмет";
+    $("brand").textContent = "Учи Лесно"; $("addTitle").textContent = "Добави въпроси · " + nm; $("statsTitle").textContent = "Резултати · " + nm;
+    render(); refreshMeta();
+  }
+  function login(id) {
+    PROFILE = PROFILES.find(p => p.id === id); pendingId = null; lset(ACTIVE_KEY, id);
+    const d = lget(DATA_PREFIX + id, null);
+    DATA = d && Array.isArray(d.subjects) ? { subjects: d.subjects.map(cleanSubj), active: d.active } : { subjects: [], active: null };
+    $("whoBtn").textContent = "👤 " + PROFILE.name; lset(DATA_PREFIX + id, DATA);
+    loadSubject(); showTab("quiz");
+  }
+  function askPin(id) { pendingId = id; $("pinBox").hidden = false; $("pinIn").value = ""; $("pinIn").focus(); }
+  function showGate(pid) {
+    [card, subjView, addView, statsView, tabsEl, topEl].forEach(e => e.hidden = true);
+    profView.hidden = false; pendingId = null; $("pinBox").hidden = true; $("profStatus").textContent = "";
+    renderProfiles(); if (pid) askPin(pid);
+  }
+  function renderProfiles() {
+    const ul = $("profList"); ul.innerHTML = "";
+    PROFILES.forEach(p => {
+      const li = document.createElement("li"); li.className = "pitem" + (PROFILE && PROFILE.id === p.id ? " act" : "");
+      li.innerHTML = '<span class="pnum"></span><div class="pbody"></div><div class="row"></div>';
+      li.querySelector(".pnum").textContent = p.name.charAt(0).toUpperCase();
+      li.querySelector(".pbody").textContent = p.name + (p.pin ? " 🔒" : "");
+      const go = mk("Влез", "del"), rm = mk("Изтрий", "del");
+      go.addEventListener("click", () => p.pin ? askPin(p.id) : login(p.id));
+      arm(rm, "Изтрий", "Сигурен ли си?", () => {
+        PROFILES = PROFILES.filter(x => x.id !== p.id); lset(PROF_KEY, PROFILES);
+        try { localStorage.removeItem(DATA_PREFIX + p.id); } catch (e) {}
+        if (PROFILE && PROFILE.id === p.id) PROFILE = null;
+        renderProfiles();
+      });
+      li.lastChild.append(go, rm); ul.appendChild(li);
+    });
+  }
+  async function tryPin() {
+    const p = PROFILES.find(x => x.id === pendingId); if (!p) return;
+    if (await hashPin($("pinIn").value, p.id) === p.pin) login(p.id);
+    else { $("profStatus").textContent = "Грешен ПИН"; $("profStatus").className = "status bad"; $("pinIn").value = ""; }
+  }
+  $("pinOk").addEventListener("click", tryPin);
+  $("pinIn").addEventListener("keydown", e => { if (e.key === "Enter") tryPin(); });
+  $("whoBtn").addEventListener("click", () => showGate());
+  $("newBtn").addEventListener("click", async () => {
+    const name = $("newName").value.trim(), pin = $("newPin").value.trim(), st = $("profStatus");
+    const bad = m => { st.textContent = m; st.className = "status bad"; };
+    if (!name) return bad("Напиши име.");
+    if (PROFILES.some(p => p.name.toLowerCase() === name.toLowerCase())) return bad("Има профил с това име.");
+    if (pin && !/^\d{4,8}$/.test(pin)) return bad("ПИН е от 4 до 8 цифри.");
+    const p = { id: uid(), name }; if (pin) p.pin = await hashPin(pin, p.id);
+    PROFILES.push(p); lset(PROF_KEY, PROFILES);
+    lset(DATA_PREFIX + p.id, { subjects: [seedSubj()], active: null });
+    $("newName").value = ""; $("newPin").value = ""; login(p.id);
+  });
+
+  const stMsg = (m, c) => { const el = $("subjStatus"); el.textContent = m; el.className = "status " + (c || ""); };
+  let deferredInstall = null;
+  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferredInstall = e; updateInstall(); });
+  window.addEventListener("appinstalled", () => { deferredInstall = null; updateInstall(); });
+  function updateInstall() {
+    const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    $("instBtn").hidden = !deferredInstall;
+    $("instHelp").textContent = standalone ? "Приложението вече е инсталирано на това устройство."
+      : deferredInstall ? "Инсталирай „Учи Лесно“ като приложение. Работи и без интернет."
+      : ios ? "На iPhone и iPad: натисни „Сподели“ в Safari, после „Добави към началния екран“."
+      : "Chrome и Edge: иконата за инсталиране в адресната лента или менюто (три точки) → „Инсталирай“. Android: „Добави към началния екран“. Safari на Mac: Файл → „Добави към Dock“.";
+  }
+  $("instBtn").addEventListener("click", async () => { if (!deferredInstall) return; deferredInstall.prompt(); try { await deferredInstall.userChoice; } catch (e) {} deferredInstall = null; updateInstall(); });
+  function renderSubjects() {
+    updateInstall();
+    const ul = $("subjList"); ul.innerHTML = "";
+    DATA.subjects.forEach((x, n) => {
+      const li = document.createElement("li"); li.className = "pitem" + (SUBJ && x.id === SUBJ.id ? " act" : "");
+      li.innerHTML = '<span class="pnum"></span><div class="pbody"><b></b><div class="help"></div></div><div class="row"></div>';
+      li.querySelector(".pnum").textContent = n + 1; li.querySelector("b").textContent = x.name;
+      li.querySelector(".help").textContent = ((x.seed ? QUESTIONS.length : 0) + x.added.length) + " въпроса, " + x.stats.length + " опита";
+      const go = mk("Отвори", "del"), rm = mk("Изтрий", "del");
+      go.addEventListener("click", () => { DATA.active = x.id; saveData(); loadSubject(); showTab("quiz"); });
+      arm(rm, "Изтрий", "Сигурен ли си?", () => {
+        DATA.subjects.splice(n, 1); DATA.active = SUBJ && SUBJ.id !== x.id ? SUBJ.id : null;
+        saveData(); loadSubject(); renderSubjects();
+      });
+      li.lastChild.append(go, rm); ul.appendChild(li);
+    });
+    $("seedBtn").hidden = DATA.subjects.some(x => x.seed);
+  }
+  $("seedBtn").addEventListener("click", () => { DATA.subjects.unshift(seedSubj()); saveData(); renderSubjects(); });
+  $("subjAdd").addEventListener("click", () => {
+    const name = $("subjName").value.trim();
+    if (!name) return stMsg("Напиши име на предмета.", "bad");
+    if (DATA.subjects.some(x => x.name.toLowerCase() === name.toLowerCase())) return stMsg("Вече има предмет с това име.", "bad");
+    const x = newSubj(name, false); DATA.subjects.push(x); DATA.active = x.id;
+    $("subjName").value = ""; saveData(); loadSubject(); showTab("add");
+    addOpen = true; showTab("add"); parseStatus.textContent = "Предметът е създаден. Постави първите въпроси."; parseStatus.className = "status ok";
+  });
+  $("bkOut").addEventListener("click", () => {
+    if (SUBJ) { SUBJ.added = ADDED; SUBJ.stats = STATS; }
+    const blob = new Blob([JSON.stringify({ app: "qa-test", v: 2, profile: PROFILE.name, exported: Date.now(), data: DATA })], { type: "application/json" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+    a.download = "qa-test-" + PROFILE.name.replace(/[^\p{L}\p{N}]+/gu, "-") + "-" + new Date().toISOString().slice(0, 10) + ".json";
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    stMsg("Копието е свалено.", "ok");
+  });
+  $("bkIn").addEventListener("click", () => $("bkFile").click());
+  $("bkFile").addEventListener("change", async e => {
+    const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+    try {
+      const j = JSON.parse(await f.text());
+      if (!j || !j.data || !Array.isArray(j.data.subjects)) throw 0;
+      if (SUBJ) { SUBJ.added = ADDED; SUBJ.stats = STATS; }
+      j.data.subjects.map(cleanSubj).forEach(x => {
+        const ex = DATA.subjects.find(y => y.name.toLowerCase() === x.name.toLowerCase());
+        if (!ex) { DATA.subjects.push(x); return; }
+        const qs = new Set(ex.added.map(y => norm(y.q))); x.added.forEach(y => { if (!qs.has(norm(y.q))) { ex.added.push(y); qs.add(norm(y.q)); } });
+        const ts = new Set(ex.stats.map(y => y.t)); x.stats.forEach(y => { if (!ts.has(y.t)) ex.stats.push(y); });
+        ex.stats.sort((p, q) => p.t - q.t);
+      });
+      saveData(); loadSubject(); renderSubjects(); stMsg("Копието е върнато.", "ok");
+    } catch (err) { stMsg("Файлът не е валидно копие.", "bad"); }
+  });
+
+  function boot() {
+    PROFILES = lget(PROF_KEY, []);
+    if (!PROFILES.length) {   /* първо стартиране: старите данни стават профил „Аз“ с предмет „Патрология“ */
+      const p = { id: uid(), name: "Аз" }; PROFILES = [p]; lset(PROF_KEY, PROFILES);
+      const x = seedSubj(); x.added = x.added.concat(loadLocal().filter(validQ)); x.stats = loadLocalKey(STATS_KEY).filter(validS);
+      lset(DATA_PREFIX + p.id, { subjects: [x], active: x.id }); lset(ACTIVE_KEY, p.id);
+    }
+    const act = PROFILES.find(p => p.id === lget(ACTIVE_KEY, "")) || (PROFILES.length === 1 ? PROFILES[0] : null);
+    if (act && !act.pin) login(act.id); else showGate(act && act.id);
+    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+  }
+  boot();
+</script>
+<script>if('serviceWorker' in navigator && location.protocol.indexOf('http')===0){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}</script></body></html>
